@@ -12,44 +12,6 @@ from verl.utils.hdfs_io import copy, makedirs
 import argparse
 
 
-def gen_dataset(
-    num_samples: int,
-    num_operands: int = 6,
-    max_target: int = 1000,
-    min_number: int = 1,
-    max_number: int = 100,
-    operations: List[str] = ['+', '-', '*', '/'],
-    seed_value: int = 42,
-) -> List[Tuple]:
-    """Generate dataset for countdown task.
-    
-    Args:
-        num_samples: Number of samples to generate
-        num_operands: Number of numbers provided in each sample
-        max_target: Maximum value for target number
-        min_number: Minimum value for provided numbers
-        max_number: Maximum value for provided numbers
-        operations: List of allowed operations
-        seed_value: Random seed for reproducibility
-        
-    Returns:
-        List of tuples containing (target, numbers, solution)
-    """
-    seed(seed_value)
-    samples = []
-    
-    for _ in tqdm(range(num_samples)):
-        # Generate random target
-        target = randint(1, max_target)
-        
-        # Generate random numbers
-        numbers = [randint(min_number, max_number) for _ in range(num_operands)]
-        
-        
-        samples.append((target, numbers))
-    
-    return samples
-
 def make_prefix(dp, template_type):
     target = dp['target']
     numbers = dp['nums']
@@ -70,26 +32,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--local_dir', default='~/data/countdown')
     parser.add_argument('--hdfs_dir', default=None)
-    parser.add_argument('--num_samples', type=int, default=100000)
-    parser.add_argument('--num_operands', type=int, default=6)
-    parser.add_argument('--max_target', type=int, default=1000)
-    parser.add_argument('--min_number', type=int, default=1)
-    parser.add_argument('--max_number', type=int, default=100)
-    parser.add_argument('--train_size', type=int, default=327680)
-    parser.add_argument('--test_size', type=int, default=1024)
+    parser.add_argument('--remote_dir', default='d1shs0ap/countdown')
     parser.add_argument('--template_type', type=str, default='base')
 
     args = parser.parse_args()
 
-    data_source = 'countdown'
-    TRAIN_SIZE = args.train_size
-    TEST_SIZE = args.test_size
-
-    raw_dataset = load_dataset('Jiayi-Pan/Countdown-Tasks-3to4', split='train')
-
-    assert len(raw_dataset) > TRAIN_SIZE + TEST_SIZE
-    train_dataset = raw_dataset.select(range(TRAIN_SIZE))
-    test_dataset = raw_dataset.select(range(TRAIN_SIZE, TRAIN_SIZE + TEST_SIZE))
+    train_dataset = load_dataset(args.remote_dir, split='train')
+    test_dataset = load_dataset(args.remote_dir, split='test')
 
     def make_map_fn(split):
         def process_fn(example, idx):
@@ -99,7 +48,7 @@ if __name__ == '__main__':
                 "numbers": example['nums']
             }
             data = {
-                "data_source": data_source,
+                "data_source": 'countdown',
                 "prompt": [{
                     "role": "user",
                     "content": question,
@@ -128,4 +77,4 @@ if __name__ == '__main__':
 
     if hdfs_dir is not None:
         makedirs(hdfs_dir)
-        copy(src=local_dir, dst=hdfs_dir) 
+        copy(src=local_dir, dst=hdfs_dir)
