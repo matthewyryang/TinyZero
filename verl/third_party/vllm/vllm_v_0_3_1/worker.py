@@ -94,6 +94,7 @@ class Worker:
         # Related issue:
         # https://discuss.pytorch.org/t/cuda-allocation-lifetime-for-inputs-to-distributed-all-reduce/191573
         os.environ["TORCH_NCCL_AVOID_RECORD_STREAMS"] = "1"
+        print('Worker A')
 
         # Env vars will be set by TORCHRUN.
         self.rank = self.rank if self.rank is not None else int(os.getenv("RANK", "-1"))
@@ -102,6 +103,7 @@ class Worker:
         if self.rank < 0:
             raise ValueError("Invalid or unspecified rank.")
         torch.cuda.set_device(self.device)
+        print('Worker B')
 
         _check_if_gpu_supports_dtype(self.model_config.dtype)
 

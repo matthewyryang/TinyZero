@@ -30,7 +30,7 @@ Assistant: Let me solve this step by step.
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--local_dir', default='~/data/countdown')
+    parser.add_argument('--local_dir', default='/home/myang4/TinyZero/data/countdown')
     parser.add_argument('--hdfs_dir', default=None)
     parser.add_argument('--remote_dir', default='d1shs0ap/countdown')
     parser.add_argument('--template_type', type=str, default='base')

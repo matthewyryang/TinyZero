@@ -21,7 +21,7 @@ from verl.utils.reward_score import gsm8k, math, multiply, countdown
 from verl.trainer.ppo.ray_trainer import RayPPOTrainer
 
 
-def _select_rm_score_fn(data_source):
+def _select_rm_score_fn(data_source, val=False):
     if data_source == 'openai/gsm8k':
         return gsm8k.compute_score
     elif data_source == 'lighteval/MATH':
@@ -29,7 +29,10 @@ def _select_rm_score_fn(data_source):
     elif "multiply" in data_source or "arithmetic" in data_source:
         return multiply.compute_score
     elif "countdown" in data_source:
-        return countdown.compute_score
+        if not val:
+            return countdown.compute_score
+        else:
+            return lambda solution_str, ground_truth: countdown.compute_score(solution_str, ground_truth, format_score=0)
     else:
         raise NotImplementedError
 
@@ -38,9 +41,10 @@ class RewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine) -> None:
+    def __init__(self, tokenizer, num_examine, val=False) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.val = val
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -75,7 +79,7 @@ class RewardManager():
 
             # select rm_score
             data_source = data_item.non_tensor_batch['data_source']
-            compute_score_fn = _select_rm_score_fn(data_source)
+            compute_score_fn = _select_rm_score_fn(data_source, val=self.val)
 
             score = compute_score_fn(solution_str=sequences_str, ground_truth=ground_truth)
             reward_tensor[i, valid_response_length - 1] = score
@@ -174,7 +178,7 @@ def main_task(config):
     reward_fn = RewardManager(tokenizer=tokenizer, num_examine=0)
 
     # Note that we always use function-based RM for validation
-    val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1)
+    val_reward_fn = RewardManager(tokenizer=tokenizer, num_examine=1, val=True)
 
     resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
 

@@ -2,6 +2,7 @@ import re
 import random
 import ast
 import operator
+from transformers import AutoTokenizer
 
 
 def extract_solution(solution_str):
@@ -56,7 +57,7 @@ def evaluate_equation(equation_str):
         return None
 
 
-def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1.):
+def compute_score(solution_str, ground_truth, method='strict', format_score=0.1, score=1., tokenizer=AutoTokenizer.from_pretrained('Qwen/Qwen2.5-3B')):
     """The scoring function for countdown task.
     
     Args:
@@ -74,7 +75,7 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
     
     if do_print:
         print(f"--------------------------------")
-        print(f"Target: {target} | Numbers: {numbers}")
+        print(f"Target: {target} | Numbers: {numbers} | Length: {len(tokenizer.encode(solution_str.split("Assistant:", 1)[1]))}")
         print(f"Extracted equation: {equation}")
         print(f"Solution string: {solution_str}")
 

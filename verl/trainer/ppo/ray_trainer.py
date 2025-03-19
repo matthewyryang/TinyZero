@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pprint import pprint
 from typing import Type, Dict
+from collections import defaultdict
 
 import numpy as np
 from codetiming import Timer
@@ -254,6 +255,41 @@ def compute_data_metrics(batch, use_critic=True):
         'prompt_length/clip_ratio':
             torch.mean(torch.eq(prompt_length, max_prompt_length).float()).detach().item(),
     }
+
+    # add metrics by difficulty
+    correct_lengths_by_difficulty = defaultdict(list)
+    incorrect_lengths_by_difficulty = defaultdict(list)
+    rewards_by_difficulty = defaultdict(list)
+
+    for nums, reward, length in zip(batch.non_tensor_batch['nums'], sequence_reward, response_length):
+        difficulty = len(nums)
+        binary_reward = 1 if reward > 0.9 else 0
+        
+        rewards_by_difficulty[difficulty].append(binary_reward)
+        if binary_reward == 1:
+            correct_lengths_by_difficulty[difficulty].append(length.detach().item())
+        else:
+            incorrect_lengths_by_difficulty[difficulty].append(length.detach().item())
+    
+    for difficulty in rewards_by_difficulty:
+        mean_reward = np.mean(rewards_by_difficulty[difficulty])
+        mean_length = np.mean(correct_lengths_by_difficulty[difficulty] + incorrect_lengths_by_difficulty[difficulty])
+        
+        if len(correct_lengths_by_difficulty[difficulty]) > 0:
+            mean_correct_length = np.mean(correct_lengths_by_difficulty[difficulty])
+        else:
+            mean_correct_length = -1
+        
+        if len(incorrect_lengths_by_difficulty[difficulty]) > 0:
+            mean_incorrect_length = np.mean(incorrect_lengths_by_difficulty[difficulty])
+        else:
+            mean_incorrect_length = -1
+        
+        metrics[f'difficulty/mean_reward_by_difficulty/{difficulty}'] = mean_reward
+        metrics[f'difficulty/mean_correct_length_by_difficulty/{difficulty}'] = mean_correct_length
+        metrics[f'difficulty/mean_incorrect_length_by_difficulty/{difficulty}'] = mean_incorrect_length
+        metrics[f'difficulty/mean_length_by_difficulty/{difficulty}'] = mean_length
+
     return metrics
 
 
@@ -390,6 +426,10 @@ class RayPPOTrainer(object):
             self.config.critic.optim.total_training_steps = total_training_steps
 
     def _validate(self):
+        length_by_difficulty = {}
+        reward_by_difficulty = {}
+        correctness_by_difficulty = {}
+
         reward_tensor_lst = []
         data_source_lst = []
         for test_data in self.val_dataloader:
@@ -520,12 +560,12 @@ class RayPPOTrainer(object):
             self.config.trainer.default_hdfs_dir, 'actor')
         self.actor_rollout_wg.save_checkpoint(actor_local_path, actor_remote_path)
 
-        if self.use_critic:
-            critic_local_path = os.path.join(self.config.trainer.default_local_dir, 'critic',
-                                             f'global_step_{self.global_steps}')
-            critic_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
-                self.config.trainer.default_hdfs_dir, 'critic')
-            self.critic_wg.save_checkpoint(critic_local_path, critic_remote_path)
+        # if self.use_critic:
+        #     critic_local_path = os.path.join(self.config.trainer.default_local_dir, 'critic',
+        #                                      f'global_step_{self.global_steps}')
+        #     critic_remote_path = None if self.config.trainer.default_hdfs_dir is None else os.path.join(
+        #         self.config.trainer.default_hdfs_dir, 'critic')
+        #     self.critic_wg.save_checkpoint(critic_local_path, critic_remote_path)
 
     def _balance_batch(self, batch: DataProto, metrics, logging_prefix='global_seqlen'):
         """Reorder the data on single controller such that each dp rank gets similar total tokens"""
