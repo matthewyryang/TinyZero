@@ -74,8 +74,9 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
     do_print = random.randint(1, 64) == 1
     
     if do_print:
+        token_len = len(tokenizer.encode(solution_str.split("Assistant:", 1)[1]))
         print(f"--------------------------------")
-        print(f"Target: {target} | Numbers: {numbers} | Length: {len(tokenizer.encode(solution_str.split("Assistant:", 1)[1]))}")
+        print(f"Target: {target} | Numbers: {numbers} | Length: {token_len}")
         print(f"Extracted equation: {equation}")
         print(f"Solution string: {solution_str}")
 
@@ -84,6 +85,9 @@ def compute_score(solution_str, ground_truth, method='strict', format_score=0.1,
             print(f"No equation found")
         return 0
     
+    # if solution_str.count("</think>") > 1:
+    #     return 0
+
     # Validate equation uses correct numbers
     if not validate_equation(equation, numbers):
         if do_print:
