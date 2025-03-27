@@ -14,7 +14,7 @@ def construct_problem(entry):
     nums = entry['nums']
     assert len(nums) == 2
 
-    return f"What is the product of {nums[0]} and {nums[1]}?"
+    return f"What is the product of {nums[0]} and {nums[1]}? Show your work in <think> </think> tags. Return the final answer in <answer> </answer> tags, for example <answer> 15234230 </answer>"
 
 
 if __name__ == "__main__":
@@ -51,10 +51,9 @@ if __name__ == "__main__":
     solutions = {}
     for i in tqdm(range(args.dataset_start, args.dataset_end, args.batch_size)):
         batch = dataset[i : min(i + args.batch_size, args.dataset_end)]
-        # batch_problem = batch['problem']
-        batch_problem = [construct_problem(entry) for entry in batch]
-        
-        convs = [apply_template(problem) for problem in batch_problem]
+        # batch_problem = [construct_problem(entry) for entry in batch]
+        # convs = [apply_template(problem) for problem in batch_problem]
+        convs = [entry['prompt'] for entry in batch]
         completions = llm.chat(
             messages=convs,
             sampling_params=SamplingParams(
@@ -67,5 +66,14 @@ if __name__ == "__main__":
         for j, completion in enumerate(completions):
             solutions[i + j] = completion
 
-    with open(os.path.join(args.output_path, f'pass@{args.K}_{args.dataset_start}_{args.dataset_end}_difficulty_{args.difficulty}.pkl'), 'wb') as f:
-        pickle.dump(solutions, f)
+
+    new_data = {}
+    for i in range(args.dataset_start, args.dataset_end):
+        texts = [output.text for output in solutions[i].outputs]
+    
+        new_data[i] = dataset[i]
+        new_data[i]["qwen32b-samples"] = texts
+
+    with open(f"/data/group_data/rl/myang4/multiply/multiply-train-{args.difficulty}-inferenced.json", "w") as f:
+        json.dump(new_data, f, indent=4)
+

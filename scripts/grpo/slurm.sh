@@ -21,7 +21,7 @@ export BASE_MODEL=/data/group_data/rl/cognitive_behaviors/global_step_75
 
 export DATA_DIR="/home/myang4/TinyZero/data/$DATA_DISTRIBUTION"
 export ROLLOUT_TP_SIZE=2
-export EXPERIMENT_NAME="$DATA_DISTRIBUTION-$CONTEXT_LENGTH-llama-grpo-token-level-gradient-no-std"
+export EXPERIMENT_NAME="$DATA_DISTRIBUTION-$CONTEXT_LENGTH-llama-grpo-aha"
 export OUTPUT_DIR="/data/user_data/myang4/countdown/$EXPERIMENT_NAME"
 export VLLM_ATTENTION_BACKEND=XFORMERS
 export SAVE_FREQ=-1
