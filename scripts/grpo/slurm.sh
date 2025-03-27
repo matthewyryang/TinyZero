@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=100G
 #SBATCH --time 48:00:00
-#SBATCH --partition=rl
+#SBATCH --partition=preempt
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate zero-rl

@@ -10,7 +10,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_split", type=str, default="train")
     parser.add_argument("--dataset_start", type=int, default=0)
     parser.add_argument("--dataset_end", type=int, default=2)
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--output_path", type=str, default="/home/myang4/TinyZero/data/DeepScaleR-Preview-Dataset")
     parser.add_argument("-K", type=int, default=16)
     parser.add_argument("--model", type=str, default="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
@@ -56,5 +56,3 @@ if __name__ == "__main__":
 
     with open(os.path.join(args.output_path, f'pass_at_k_{args.dataset_start}_{args.dataset_end}.pkl'), 'wb') as f:
         pickle.dump(output, f)
-
-    print(output)
